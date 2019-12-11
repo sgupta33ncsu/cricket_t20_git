@@ -1,4 +1,4 @@
-sleepTimeForStatusBar<-0.1
+sleepTimeForStatusBar<-2
 library(DT)
 library(shinydashboard)
 library(cricketdata)
@@ -23,59 +23,46 @@ mt20_gt20$Country <- as.factor(mt20_gt20$Country)
 cldat<-mt20_gt20 %>% dplyr::filter(Runs>1000) %>% select("Player", "StrikeRate", "Runs")
 cldat<-cldat %>% remove_rownames %>% column_to_rownames(var="Player")
 
-#CREATE DATASET FOR THE INTERACTIVE PLOT
-#CREATE SUMMARY DATASET FOR COUNTRIES
-CountrySummary<-
-  mt20_gt20 %>%
-  replace_na(list(Runs=0)) %>% 
-  group_by(Country) %>% 
-  summarise(
-    TotalPlayers=dplyr::n(), 
-    TotalRuns=sum(Runs), 
-    TotalMatches=sum(Matches)
-  )
 
-#GET COUNTRY CODES
-df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
-df <- df %>% select(COUNTRY, CODE)
-colnames(df)<-c("Country", "CODE")
-
-#JOIN WITH THIS DATASET TO INCLUDE COUNTRY CODE
-CountrySummaryWCode<-inner_join(CountrySummary, df, by="Country")
-
-#CREATE HOVER TEXT 
-CountrySummaryWCode$hover <- 
-  with(CountrySummaryWCode, paste(Country, '<br>', 
-                                  "Total Players", TotalPlayers, "<br>", 
-                                  "Total Matches", TotalMatches, "<br>",
-                                  "Total Runs", TotalRuns
-  )
-  )
 
 compute_data<-function(updateProgress=NULL){
   
-  updateProgress(detail = "1/8 Attaching Libraries")
+  #CREATE DATASET FOR THE INTERACTIVE PLOT
+  #CREATE SUMMARY DATASET FOR COUNTRIES
+  updateProgress(detail = "1/4 Create Summary datasets")
   Sys.sleep(sleepTimeForStatusBar)
-  
-  updateProgress(detail = "2/8 Getting data from Cricinfo API")
+  CountrySummary<-
+    mt20_gt20 %>%
+    replace_na(list(Runs=0)) %>% 
+    group_by(Country) %>% 
+    summarise(
+      TotalPlayers=dplyr::n(), 
+      TotalRuns=sum(Runs), 
+      TotalMatches=sum(Matches)
+    )
+    
+  #GET COUNTRY CODES
+  updateProgress(detail = "2/4 Get Country codes from API")
   Sys.sleep(sleepTimeForStatusBar)
+  df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
+  df <- df %>% select(COUNTRY, CODE)
+  colnames(df)<-c("Country", "CODE")
   
-  
-  updateProgress(detail = "3/8 Remove Countries < 20 Players")
+  #JOIN WITH THIS DATASET TO INCLUDE COUNTRY CODE  
+  updateProgress(detail = "3/4 Join code with main dataset")
   Sys.sleep(sleepTimeForStatusBar)
+  CountrySummaryWCode<-inner_join(CountrySummary, df, by="Country")
   
-  updateProgress(detail = "4/8 Create Clustering Tables")
+  #CREATE HOVER TEXT 
+  updateProgress(detail = "4/4 Creating hover text")
   Sys.sleep(sleepTimeForStatusBar)
-  
-  updateProgress(detail = "5/8 Get Country codes from API")
-  Sys.sleep(sleepTimeForStatusBar)
-  
-  updateProgress(detail = "6/8 Joining Cricket data w country Codes")
-  Sys.sleep(sleepTimeForStatusBar)
-  
-  updateProgress(detail = "7/8 Create hover text for Graph")
-  Sys.sleep(sleepTimeForStatusBar)
-  
-  updateProgress(detail = "8/8 Rendering Graph")
-  Sys.sleep(sleepTimeForStatusBar)
+  CountrySummaryWCode$hover <- 
+    with(CountrySummaryWCode, paste(Country, '<br>', 
+                                    "Total Players", TotalPlayers, "<br>", 
+                                    "Total Matches", TotalMatches, "<br>",
+                                    "Total Runs", TotalRuns
+    )
+)
+
+
 }
