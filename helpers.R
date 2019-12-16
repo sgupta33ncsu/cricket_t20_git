@@ -1,4 +1,11 @@
 sleepTimeForStatusBar<-2
+if ("cricketdata" %in% row.names(installed.packages())  == FALSE)
+  devtools::install_github("ropenscilabs/cricketdata")
+if ("pscl" %in% row.names(installed.packages())  == FALSE)
+  devtools::install_github("pscl")
+if ("plotly" %in% row.names(installed.packages())  == FALSE)
+  devtools::install_github("plotly")
+
 library(DT)
 library(shinydashboard)
 library(cricketdata)
@@ -6,7 +13,6 @@ library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(shiny)
-library(DT)
 library(shinydashboard)
 library(tree)
 library(plotly)
@@ -23,8 +29,35 @@ mt20_gt20$Country <- as.factor(mt20_gt20$Country)
 cldat<-mt20_gt20 %>% dplyr::filter(Runs>1000) %>% select("Player", "StrikeRate", "Runs")
 cldat<-cldat %>% remove_rownames %>% column_to_rownames(var="Player")
 
+#BELOW CODE IS A DUPLICATION
+#FOR SOME REASON, THIS APP WORKS W/O THIS DUPLICATION ON MY MACHINE 
+#BUT IT DOESNT WORK ON SHINYAPP.IO WHEN BELOW CODE IS INSIDE THE FUNCTION 
+#HENCE DUPLICATING
+  CountrySummary<-
+    mt20_gt20 %>%
+    replace_na(list(Runs=0)) %>% 
+    group_by(Country) %>% 
+    summarise(
+      TotalPlayers=dplyr::n(), 
+      TotalRuns=sum(Runs), 
+      TotalMatches=sum(Matches)
+    )
 
+  df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
+  df <- df %>% select(COUNTRY, CODE)
+  colnames(df)<-c("Country", "CODE")
 
+  CountrySummaryWCode<-inner_join(CountrySummary, df, by="Country")
+    
+	CountrySummaryWCode$hover <- 
+	with(CountrySummaryWCode, paste(Country, '<br>', 
+				      "Total Players", TotalPlayers, "<br>", 
+				      "Total Matches", TotalMatches, "<br>",
+				      "Total Runs", TotalRuns
+	)
+	)
+  
+  
 compute_data<-function(updateProgress=NULL){
   
   #CREATE DATASET FOR THE INTERACTIVE PLOT
